@@ -1,0 +1,17 @@
+{
+  "name": "nava-the",
+  "version": "1.0.0",
+  "description": "take home exercise",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "author": "JPW",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "express": "^4.16.4",
+    "nodemon": "^1.19.0"
+  }
+}
