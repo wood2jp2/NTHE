@@ -40,12 +40,17 @@ fs.readdir(pathToDataFolder, (err, files) => {
             // So, we've made sense of the CSV/Schema file. Let's move forward with working with the data using that information
             const jsonToPost = transformDataFileToJson(pathToDataFolder + file, csvFieldsArray)
 
+            console.log(jsonToPost)
+            
+            // now that we have an array of json, we can move forward with POST
             jsonToPost.forEach(row => {
                axios.post('https://2swdepm0wa.execute-api.us-east-1.amazonaws.com/prod/NavaInterview/measures', row)
                 .then(resp => console.log(`The status of the HTTP response is ${resp.status}. Message: ${resp.statusText}`))
                 .catch(error => console.log(`There was an error posting the data: ${error}`))
             })
         }
+
+        // This throws if there is not a matching csv file name matching our data text file name.
         else {
             console.log(`Data file ${file} does not have a matching .csv file in the schema folder!`)
         }
@@ -99,30 +104,45 @@ const readAndMapSchemaCSVFields = csvFilePath => {
 // Takes in the path to the data file, as well as the CSV Schema fields array that we calculated in the function above.
 const transformDataFileToJson = (dataFilePath, schemaFieldsArray) => {
     
-    
+    // reads out the data from the file per line into an array
     const dataFileContents = fs.readFileSync(dataFilePath, 'utf-8').split('\n').join('').split('\r')
 
+    // Maps each line of data to its own JSON object
     const dataFileToJson = dataFileContents.map(data => {
+
+        // based on the data given, there will be spaces between at LEAST the name of the item and the rest of its data
         const splitDataOnSpace = data.split(' ')
         const json = {}
+
+        // Based on the format NAME YEAR|REQUIRED|MINSCORE or NAME YEAR|REQUIRED MINSCORE
+        // we know name always comes first
         const name = splitDataOnSpace[0]
         json[schemaFieldsArray[0].name] = name
         
+        // we know the year is always the first four characters of the next portion of data
         const year = splitDataOnSpace[1].substr(0, 4)
         json[schemaFieldsArray[1].name] = year
 
+        // we know required is a 1 (true) or 0 (false) and comes immediately after the four year characters
         const required = splitDataOnSpace[1].substr(4, 1)
         json[schemaFieldsArray[2].name] = !!required
 
+        // If there's a second space (IA_PCMH 20171 0) then the last item is the min score
         if (splitDataOnSpace.length === 3) {
-            json[schemaFieldsArray[3].name] = splitDataOnSpace[2]
+            json[schemaFieldsArray[3].name] = Number(splitDataOnSpace[2])
         }
+        // If there isn't, we know that the min score is the rest of the string
         else if (splitDataOnSpace.length === 2) {
             const minimumScore = splitDataOnSpace[1].substr(5)
             json[schemaFieldsArray[3].name] = Number(minimumScore)
         }
-        return json
+
+        // return each data line's json object we created. Based on the internet, this is how I'm supposed to be transforming objects to JSON compliant
+        const stringify = JSON.stringify(json)
+
+        return stringify
     })
 
+    // return array of json objects
     return dataFileToJson
 }
